@@ -1,108 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>API Library</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>API Dashboard</title>
 <style>
-body{font-family:Arial;background:#0f0f0f;color:#fff;margin:0}
+body{font-family:system-ui;background:#0f172a;color:#e5e7eb;padding:30px}
 h1{text-align:center}
-.card{background:#1c1c1c;padding:15px;margin:10px;border-radius:8px}
-button{padding:8px 12px;border:0;border-radius:6px;cursor:pointer}
-.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center}
-.box{background:#1e1e1e;padding:20px;border-radius:10px;width:90%;max-width:400px}
-input{width:100%;padding:8px;margin:5px 0}
-pre{background:#000;padding:10px;overflow:auto}
+.category{background:#111827;border-radius:14px;padding:16px;margin-bottom:16px}
+.cat-header{display:flex;justify-content:space-between;cursor:pointer}
+.cat-name{font-size:1.2rem;font-weight:800}
+.api{margin-top:10px;padding:10px;background:#1f2933;border-radius:10px}
+.endpoint{font-family:monospace;color:#93c5fd}
+button{margin-top:6px;padding:6px 10px;border:none;border-radius:8px;cursor:pointer}
 </style>
 </head>
-
 <body>
-<h1>🚀 API Library</h1>
-<div id="list"></div>
 
-<div class="modal" id="modal">
-  <div class="box">
-    <h3 id="title"></h3>
-    <div id="params"></div>
-
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button onclick="run()">Run</button>
-      <button onclick="copyUrl()" id="copyBtn">Copy URL</button>
-      <button onclick="closeModal()">Close</button>
-    </div>
-
-    <pre id="res"></pre>
-  </div>
-</div>
+<h1>📚 API Dashboard</h1>
+<div id="app">Loading...</div>
 
 <script>
-let current = null;
+async function load() {
+  const r = await fetch("/api");
+  const data = await r.json();
+  const app = document.getElementById("app");
+  app.innerHTML = "";
 
-fetch("/api").then(r=>r.json()).then(apis=>{
-  const list = document.getElementById("list");
-  apis.forEach(a=>{
-    const d = document.createElement("div");
-    d.className = "card";
-    d.innerHTML = `
-      <b>${a.name}</b><br>
-      <small>${a.description}</small><br>
-      <code>${a.endpoint}</code><br>
-      <button onclick='openApi(${JSON.stringify(a)})'>Open</button>
+  data.categories.forEach(cat => {
+    const div = document.createElement("div");
+    div.className = "category";
+
+    div.innerHTML = `
+      <div class="cat-header">
+        <div class="cat-name">${cat.name}</div>
+        <div>${cat.count} APIs</div>
+      </div>
+      <div class="apis" style="display:none"></div>
     `;
-    list.appendChild(d);
+
+    const apisDiv = div.querySelector(".apis");
+
+    cat.apis.forEach(api => {
+      const el = document.createElement("div");
+      el.className = "api";
+      el.innerHTML = `
+        <div><b>${api.name}</b></div>
+        <div>${api.description}</div>
+        <div class="endpoint">${api.endpoint}</div>
+        <button onclick="copy('${location.origin}${api.endpoint}')">Copy URL</button>
+      `;
+      apisDiv.appendChild(el);
+    });
+
+    div.querySelector(".cat-header").onclick = () => {
+      apisDiv.style.display = apisDiv.style.display === "none" ? "block" : "none";
+    };
+
+    app.appendChild(div);
   });
-});
-
-function openApi(api){
-  current = api;
-  document.getElementById("title").innerText = api.name;
-  const p = document.getElementById("params");
-  p.innerHTML = "";
-  (api.params||[]).forEach(x=>{
-    p.innerHTML += `
-      <input id="p_${x.name}" placeholder="${x.placeholder||x.name}">
-    `;
-  });
-  document.getElementById("modal").style.display="flex";
 }
 
-function closeModal(){
-  document.getElementById("modal").style.display="none";
+function copy(text) {
+  navigator.clipboard.writeText(text);
+  alert("URL copied!");
 }
 
-function buildUrl(){
-  const q = new URLSearchParams();
-  (current.params||[]).forEach(p=>{
-    const v = document.getElementById("p_"+p.name)?.value;
-    if(v) q.append(p.name,v);
-  });
-  return location.origin + current.endpoint + (q.toString()?("?"+q):"");
-}
-
-async function run(){
-  const url = buildUrl();
-  document.getElementById("res").innerText = "Loading...";
-  try{
-    const r = await fetch(url);
-    if(r.headers.get("content-type")?.includes("json")){
-      document.getElementById("res").innerText =
-        JSON.stringify(await r.json(),null,2);
-    }else{
-      document.getElementById("res").innerText = url;
-      window.open(url,"_blank");
-    }
-  }catch(e){
-    document.getElementById("res").innerText = "Error";
-  }
-}
-
-async function copyUrl(){
-  const url = buildUrl();
-  await navigator.clipboard.writeText(url);
-  const b = document.getElementById("copyBtn");
-  b.innerText = "Copied!";
-  setTimeout(()=>b.innerText="Copy URL",1000);
-}
+load();
 </script>
+
 </body>
 </html>
