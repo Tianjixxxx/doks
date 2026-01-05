@@ -1,14 +1,52 @@
 {
-  "name": "api-library",
+  "name": "rest-api-dashboard",
   "version": "1.0.0",
+  "description": "REST API system with auto-loaded endpoints and dashboard",
+  "author": "Ry",
+  "license": "MIT",
   "main": "index.js",
   "type": "commonjs",
+
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "node index.js"
   },
+
   "dependencies": {
-    "axios": "^1.6.0",
-    "cors": "^2.8.5",
-    "express": "^4.19.2"
+    "express": "4.19.2",
+    "cors": "2.8.5",
+    "axios": "1.6.8",
+    "body-parser": "1.20.3",
+    "express-rate-limit": "7.1.3",
+    "node-cache": "5.1.2",
+
+    "@napi-rs/canvas": "^0.1.77",
+    "jimp": "0.22.10",
+    "knights-canvas": "^1.3.7-a",
+
+    "@google/genai": "^0.13.0",
+    "mongoose": "^6.13.8",
+
+    "chalk": "4.1.2",
+    "crypto": "1.0.1",
+    "uuid": "9.0.1",
+    "qs": "6.11.2",
+    "form-data": "4.0.0",
+    "node-fetch": "2.6.7",
+
+    "fs-extra": "11.2.0",
+    "events": "3.3.0",
+    "cheerio": "1.0.0",
+    "random-useragent": "0.5.0",
+    "yt-search": "2.12.1",
+    "ultimate-guitar": "2.0.3",
+    "spotidownloader": "1.0.0",
+    "tempmail.lol": "^4.4.0",
+    "pastebin-js": "",
+
+    "os": "0.1.2",
+    "https": "1.0.0",
+    "fs": "0.0.1-security",
+    "child_process": "1.0.2"
   }
 }
