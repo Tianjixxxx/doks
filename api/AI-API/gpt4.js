@@ -4,11 +4,16 @@ const fs = require("fs");
 const convoFile = "convo.json";
 const apiUrl = "https://www.pinoygpt.com/api/chat_response.php";
 
-// Ensure convo file exists at module load
+/* ===============================
+   ENSURE CONVO FILE EXISTS
+================================ */
 if (!fs.existsSync(convoFile)) {
   fs.writeFileSync(convoFile, JSON.stringify({}), "utf-8");
 }
 
+/* ===============================
+   CONVERSATION HELPERS
+================================ */
 function loadConversation(uid) {
   const convos = JSON.parse(fs.readFileSync(convoFile, "utf-8"));
   return convos[uid] || [];
@@ -26,13 +31,20 @@ function clearConversation(uid) {
   fs.writeFileSync(convoFile, JSON.stringify(convos, null, 2), "utf-8");
 }
 
+/* ===============================
+   MODULE EXPORT
+================================ */
 module.exports = {
   meta: {
     name: "GPT-4 (Conversational)",
-    description: "Maintains a simple conversational history per UID and forwards concatenated messages to an external GPT-like API.",
+    description:
+      "Maintains conversation memory per UID and forwards messages to an external GPT-like API.",
     category: "ai",
     method: "GET",
-    endpoint: "/gpt4-convo",
+
+    // 👇 Parameters included in endpoint
+    endpoint: "/gpt4-convo?prompt=&uid=",
+
     params: [
       {
         name: "prompt",
@@ -47,6 +59,7 @@ module.exports = {
         placeholder: "123"
       }
     ],
+
     response: {
       type: "json",
       example: {
@@ -56,6 +69,9 @@ module.exports = {
     }
   },
 
+  /* ===============================
+     REQUEST HANDLER
+  ================================ */
   onStart: async ({ req, res }) => {
     try {
       const { prompt, uid } = req.query;
@@ -68,7 +84,7 @@ module.exports = {
         });
       }
 
-      // Handle "clear" command
+      /* Clear conversation command */
       if (prompt.toLowerCase() === "clear") {
         clearConversation(uid);
         return res.json({
@@ -77,38 +93,48 @@ module.exports = {
         });
       }
 
-      // Load previous conversation
+      /* Load previous messages */
       let conversation = loadConversation(uid);
 
-      // Add new user message
-      conversation.push({ role: "user", content: prompt });
+      /* Add user input */
+      conversation.push({
+        role: "user",
+        content: prompt
+      });
 
-      // Combine messages as plain text context (no assistant labels)
-      const messageText = conversation.map((m) => m.content).join("\n");
+      /* Build plain text context */
+      const messageText = conversation
+        .map(m => m.content)
+        .join("\n");
 
-      // Send to GPT-like API
+      /* Send to external GPT API */
       const response = await axios.post(
         apiUrl,
         new URLSearchParams({ message: messageText }),
         {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            "User-Agent": "Mozilla/5.0"
           }
         }
       );
 
       const text = response.data?.response || "No response received.";
 
-      // Save assistant reply (for internal memory only)
-      conversation.push({ role: "assistant", content: text });
+      /* Save assistant reply */
+      conversation.push({
+        role: "assistant",
+        content: text
+      });
+
       saveConversation(uid, conversation);
 
-      // Send only clean text response
+      /* Final clean response */
       res.json({
         status: true,
         response: text
       });
+
     } catch (err) {
       console.error("GPT-4 Conversational Error:", err?.message || err);
       res.status(500).json({
