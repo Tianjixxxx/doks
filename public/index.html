@@ -3,69 +3,325 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>API Dashboard</title>
+<title>API Explorer</title>
+
 <style>
-body{font-family:system-ui;background:#0f172a;color:#e5e7eb;padding:30px}
-h1{text-align:center}
-.category{background:#111827;border-radius:14px;padding:16px;margin-bottom:16px}
-.cat-header{display:flex;justify-content:space-between;cursor:pointer}
-.cat-name{font-size:1.2rem;font-weight:800}
-.api{margin-top:10px;padding:10px;background:#1f2933;border-radius:10px}
-.endpoint{font-family:monospace;color:#93c5fd}
-button{margin-top:6px;padding:6px 10px;border:none;border-radius:8px;cursor:pointer}
+:root{
+  --bg1:#0f172a;
+  --bg2:#1e293b;
+  --card:#243046;
+  --soft:#334155;
+  --accent:#3b82f6;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
+  color:var(--text);
+}
+
+header{
+  position:fixed;
+  inset:0 0 auto 0;
+  height:58px;
+  background:rgba(15,23,42,.8);
+  backdrop-filter:blur(8px);
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  font-weight:800;
+  z-index:10;
+}
+
+main{
+  padding:90px 16px 40px;
+  max-width:900px;
+  margin:auto;
+}
+
+h1{
+  text-align:center;
+  margin-bottom:6px;
+}
+
+.subtitle{
+  text-align:center;
+  color:var(--muted);
+  font-size:.95rem;
+  margin-bottom:30px;
+}
+
+/* CATEGORY */
+.section{
+  background:rgba(255,255,255,.05);
+  border-radius:16px;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+
+.section-header{
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  cursor:pointer;
+  align-items:center;
+}
+
+.section-title{
+  font-weight:800;
+}
+
+.section-meta{
+  font-size:.85rem;
+  color:var(--muted);
+}
+
+.section-body{
+  display:none;
+  padding:10px;
+}
+
+/* API CARD */
+.api{
+  background:var(--card);
+  border-radius:12px;
+  padding:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.api-left{
+  max-width:70%;
+}
+
+.api-name{
+  font-weight:800;
+}
+
+.api-desc{
+  font-size:.85rem;
+  color:var(--muted);
+}
+
+.api-endpoint{
+  font-family:monospace;
+  font-size:.8rem;
+  background:rgba(255,255,255,.1);
+  padding:6px 8px;
+  border-radius:8px;
+  margin-top:6px;
+}
+
+.btn{
+  background:var(--accent);
+  border:none;
+  color:#fff;
+  padding:10px 14px;
+  border-radius:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  z-index:20;
+}
+
+.modal-box{
+  width:100%;
+  max-width:720px;
+  background:var(--soft);
+  border-radius:18px;
+  padding:20px;
+}
+
+.field{
+  margin-bottom:12px;
+}
+
+label{
+  display:block;
+  font-size:.85rem;
+  margin-bottom:6px;
+  color:var(--muted);
+}
+
+input{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  background:rgba(255,255,255,.12);
+  color:var(--text);
+}
+
+.url-box{
+  background:rgba(0,0,0,.25);
+  padding:12px;
+  border-radius:12px;
+  font-family:monospace;
+  font-size:.8rem;
+  word-break:break-all;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+}
+
+.secondary{
+  background:rgba(255,255,255,.12);
+}
+
+.response{
+  background:rgba(0,0,0,.35);
+  border-radius:12px;
+  padding:12px;
+  min-height:120px;
+  font-family:monospace;
+  font-size:.85rem;
+  margin-top:14px;
+  white-space:pre-wrap;
+}
 </style>
 </head>
 <body>
 
-<h1>📚 API Dashboard</h1>
-<div id="app">Loading...</div>
+<header>API Explorer</header>
+
+<main>
+  <h1>API Collection</h1>
+  <div class="subtitle">Browse, test, and integrate endpoints easily</div>
+  <div id="app">Loading...</div>
+</main>
+
+<div id="modal" class="modal">
+  <div class="modal-box">
+    <h3 id="mTitle"></h3>
+
+    <div class="field">
+      <label>Endpoint</label>
+      <input id="mEndpoint" readonly />
+    </div>
+
+    <div id="mParams"></div>
+
+    <div class="field">
+      <label>Request URL</label>
+      <div class="url-box" id="mUrl"></div>
+    </div>
+
+    <div class="response" id="mRes">Response will appear here...</div>
+
+    <div class="actions">
+      <button class="btn" onclick="exec()">Execute</button>
+      <button class="btn secondary" onclick="copyUrl()">Copy URL</button>
+      <button class="btn secondary" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
 
 <script>
-async function load() {
+let apiData=null,current=null;
+
+async function load(){
   const r = await fetch("/api");
-  const data = await r.json();
-  const app = document.getElementById("app");
-  app.innerHTML = "";
+  apiData = await r.json();
+  render();
+}
 
-  data.categories.forEach(cat => {
-    const div = document.createElement("div");
-    div.className = "category";
-
-    div.innerHTML = `
-      <div class="cat-header">
-        <div class="cat-name">${cat.name}</div>
-        <div>${cat.count} APIs</div>
+function render(){
+  const app=document.getElementById("app");
+  app.innerHTML="";
+  apiData.categories.forEach(cat=>{
+    const box=document.createElement("div");
+    box.className="section";
+    box.innerHTML=`
+      <div class="section-header">
+        <div class="section-title">${cat.name}</div>
+        <div class="section-meta">${cat.count} APIs</div>
       </div>
-      <div class="apis" style="display:none"></div>
+      <div class="section-body"></div>
     `;
-
-    const apisDiv = div.querySelector(".apis");
-
-    cat.apis.forEach(api => {
-      const el = document.createElement("div");
-      el.className = "api";
-      el.innerHTML = `
-        <div><b>${api.name}</b></div>
-        <div>${api.description}</div>
-        <div class="endpoint">${api.endpoint}</div>
-        <button onclick="copy('${location.origin}${api.endpoint}')">Copy URL</button>
+    const body=box.querySelector(".section-body");
+    cat.apis.forEach(api=>{
+      const el=document.createElement("div");
+      el.className="api";
+      el.innerHTML=`
+        <div class="api-left">
+          <div class="api-name">${api.name}</div>
+          <div class="api-desc">${api.description||""}</div>
+          <div class="api-endpoint">${api.endpoint}</div>
+        </div>
+        <button class="btn">Test</button>
       `;
-      apisDiv.appendChild(el);
+      el.querySelector("button").onclick=()=>open(api);
+      body.appendChild(el);
     });
-
-    div.querySelector(".cat-header").onclick = () => {
-      apisDiv.style.display = apisDiv.style.display === "none" ? "block" : "none";
+    box.querySelector(".section-header").onclick=()=>{
+      body.style.display=body.style.display==="block"?"none":"block";
     };
-
-    app.appendChild(div);
+    app.appendChild(box);
   });
 }
 
-function copy(text) {
-  navigator.clipboard.writeText(text);
-  alert("URL copied!");
+function open(api){
+  current=api;
+  document.getElementById("modal").style.display="flex";
+  document.getElementById("mTitle").textContent=api.name;
+  document.getElementById("mEndpoint").value=api.endpoint;
+  const p=document.getElementById("mParams");
+  p.innerHTML="";
+  (api.params||[]).forEach(x=>{
+    const f=document.createElement("div");
+    f.className="field";
+    f.innerHTML=`<label>${x.name}</label><input id="p_${x.name}" />`;
+    p.appendChild(f);
+  });
+  updateUrl();
 }
 
+function updateUrl(){
+  if(!current)return;
+  const q=new URLSearchParams();
+  (current.params||[]).forEach(x=>{
+    const v=document.getElementById("p_"+x.name)?.value;
+    if(v) q.append(x.name,v);
+  });
+  document.getElementById("mUrl").textContent=
+    location.origin+current.endpoint+(q.toString()?("?"+q):"");
+}
+
+async function exec(){
+  updateUrl();
+  const r=await fetch(document.getElementById("mUrl").textContent);
+  document.getElementById("mRes").textContent=await r.text();
+}
+
+function copyUrl(){
+  navigator.clipboard.writeText(document.getElementById("mUrl").textContent);
+}
+
+function closeModal(){
+  document.getElementById("modal").style.display="none";
+}
+
+document.addEventListener("input",updateUrl);
 load();
 </script>
 
