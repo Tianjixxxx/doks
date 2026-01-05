@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>API Library</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{font-family:Arial;background:#0f0f0f;color:#fff;margin:0}
+h1{text-align:center}
+.card{background:#1c1c1c;padding:15px;margin:10px;border-radius:8px}
+button{padding:8px 12px;border:0;border-radius:6px;cursor:pointer}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center}
+.box{background:#1e1e1e;padding:20px;border-radius:10px;width:90%;max-width:400px}
+input{width:100%;padding:8px;margin:5px 0}
+pre{background:#000;padding:10px;overflow:auto}
+</style>
+</head>
+
+<body>
+<h1>🚀 API Library</h1>
+<div id="list"></div>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <h3 id="title"></h3>
+    <div id="params"></div>
+
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="run()">Run</button>
+      <button onclick="copyUrl()" id="copyBtn">Copy URL</button>
+      <button onclick="closeModal()">Close</button>
+    </div>
+
+    <pre id="res"></pre>
+  </div>
+</div>
+
+<script>
+let current = null;
+
+fetch("/api").then(r=>r.json()).then(apis=>{
+  const list = document.getElementById("list");
+  apis.forEach(a=>{
+    const d = document.createElement("div");
+    d.className = "card";
+    d.innerHTML = `
+      <b>${a.name}</b><br>
+      <small>${a.description}</small><br>
+      <code>${a.endpoint}</code><br>
+      <button onclick='openApi(${JSON.stringify(a)})'>Open</button>
+    `;
+    list.appendChild(d);
+  });
+});
+
+function openApi(api){
+  current = api;
+  document.getElementById("title").innerText = api.name;
+  const p = document.getElementById("params");
+  p.innerHTML = "";
+  (api.params||[]).forEach(x=>{
+    p.innerHTML += `
+      <input id="p_${x.name}" placeholder="${x.placeholder||x.name}">
+    `;
+  });
+  document.getElementById("modal").style.display="flex";
+}
+
+function closeModal(){
+  document.getElementById("modal").style.display="none";
+}
+
+function buildUrl(){
+  const q = new URLSearchParams();
+  (current.params||[]).forEach(p=>{
+    const v = document.getElementById("p_"+p.name)?.value;
+    if(v) q.append(p.name,v);
+  });
+  return location.origin + current.endpoint + (q.toString()?("?"+q):"");
+}
+
+async function run(){
+  const url = buildUrl();
+  document.getElementById("res").innerText = "Loading...";
+  try{
+    const r = await fetch(url);
+    if(r.headers.get("content-type")?.includes("json")){
+      document.getElementById("res").innerText =
+        JSON.stringify(await r.json(),null,2);
+    }else{
+      document.getElementById("res").innerText = url;
+      window.open(url,"_blank");
+    }
+  }catch(e){
+    document.getElementById("res").innerText = "Error";
+  }
+}
+
+async function copyUrl(){
+  const url = buildUrl();
+  await navigator.clipboard.writeText(url);
+  const b = document.getElementById("copyBtn");
+  b.innerText = "Copied!";
+  setTimeout(()=>b.innerText="Copy URL",1000);
+}
+</script>
+</body>
+</html>
