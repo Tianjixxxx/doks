@@ -9,19 +9,7 @@ app.use(express.json());
 app.use(express.static("public"));
 
 const API_DIR = path.join(__dirname, "api");
-const COUNT_FILE = path.join(__dirname, "apiCounts.json"); // file to store counts
 const categories = {};
-
-// Load persisted counts from file
-let persistedCounts = {};
-if (fs.existsSync(COUNT_FILE)) {
-  try {
-    persistedCounts = JSON.parse(fs.readFileSync(COUNT_FILE, "utf8"));
-  } catch(e) {
-    console.log("Error reading counts file, starting fresh");
-    persistedCounts = {};
-  }
-}
 
 /* 🔁 LOAD APIs */
 function loadApis() {
@@ -43,9 +31,6 @@ function loadApis() {
       const endpoint = meta.endpoint || `/${category}/${fileName}`;
       const method = (meta.method || "GET").toLowerCase();
 
-      // Initialize callCount from persisted data
-      api.callCount = persistedCounts[endpoint] || 0;
-
       const apiObj = {
         name: meta.name || fileName,
         description: meta.description || "",
@@ -62,8 +47,6 @@ function loadApis() {
       // Attach route
       app[method](endpoint, async (req, res, next) => {
         try {
-          api.callCount++;
-          saveCounts(); // persist to file
           await api.onStart(req, res, next);
         } catch (err) {
           next(err);
@@ -71,16 +54,6 @@ function loadApis() {
       });
     }
   }
-}
-
-/* Save call counts to JSON file */
-function saveCounts() {
-  const allApis = Object.values(categories).flat();
-  const countsObj = {};
-  allApis.forEach(a => {
-    countsObj[a.endpoint] = a._apiRef.callCount;
-  });
-  fs.writeFileSync(COUNT_FILE, JSON.stringify(countsObj, null, 2));
 }
 
 loadApis();
@@ -95,8 +68,7 @@ app.get("/api", (req, res) => {
       description: a.description,
       endpoint: a.endpoint,
       method: a.method,
-      category: a.category,
-      callCount: a._apiRef.callCount
+      category: a.category
     }))
   }));
   res.json({ status: true, categories: responseCategories });
