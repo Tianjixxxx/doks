@@ -37,6 +37,7 @@ function loadApis() {
         endpoint,
         method: method.toUpperCase(),
         category,
+        params: meta.params || [], // <-- add params metadata
         _apiRef: api
       };
 
@@ -68,7 +69,8 @@ app.get("/api", (req, res) => {
       description: a.description,
       endpoint: a.endpoint,
       method: a.method,
-      category: a.category
+      category: a.category,
+      params: a.params   // <-- send params to frontend
     }))
   }));
   res.json({ status: true, categories: responseCategories });
@@ -76,7 +78,7 @@ app.get("/api", (req, res) => {
 
 /* 🔁 CALL-API: execute API and return raw response */
 app.get("/call-api", async (req, res) => {
-  const { endpoint } = req.query;
+  const { endpoint, ...queryParams } = req.query; // <-- capture all query parameters
   if (!endpoint) return res.status(400).send("endpoint required");
 
   let found = null;
@@ -92,7 +94,10 @@ app.get("/call-api", async (req, res) => {
     json: (data) => { if (!sent) { sent = true; res.json(data); } },
     send: (data) => { if (!sent) { sent = true; res.send(data); } }
   };
+
   try {
+    // Inject query params into req.query for the API
+    req.query = { ...req.query, ...queryParams };
     await found._apiRef.onStart(req, resProxy);
   } catch (err) {
     res.status(500).send("API execution error");
