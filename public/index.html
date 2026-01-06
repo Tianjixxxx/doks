@@ -48,7 +48,7 @@ header{
 /* SEARCH BAR */
 #searchBar{
   display:block;
-  margin:70px auto 20px;
+  margin:70px auto 16px;
   max-width:400px;
   width:90%;
   padding:10px 14px;
@@ -63,22 +63,23 @@ header{
   color:var(--muted);
 }
 
-/* IMAGE PLACEHOLDER */
+/* IMAGE BANNER */
 #banner{
   display:block;
-  margin:10px auto 20px;
+  margin:0 auto 24px;
   width:90%;
   max-width:900px;
   height:200px;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--border);
   border-radius:16px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--muted);
-  font-size:1.2rem;
-  text-align:center;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+
+#banner img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:16px;
 }
 
 /* MAIN */
@@ -86,6 +87,18 @@ main{
   padding:16px;
   max-width:900px;
   margin:auto;
+}
+
+/* CONTAINERS */
+.container{
+  margin-bottom:30px;
+}
+
+/* CONTAINER TITLE */
+.container h2{
+  text-align:center;
+  margin-bottom:14px;
+  font-weight:900;
 }
 
 /* CATEGORY */
@@ -257,22 +270,34 @@ main{
 <header>🍁 Autumn API Dashboard</header>
 
 <main>
+  <!-- Search -->
   <input type="text" id="searchBar" placeholder="Search APIs..." />
-  <div id="https://i.imgur.com/f9UHHgk.gif">Your seasonal image/banner here 🍂</div>
-  <div id="popular"></div>
-  <div id="app">Loading...</div>
+
+  <!-- Banner -->
+  <div id="banner">
+    <img src="https://i.imgur.com/f9UHHgk.gif" alt="Seasonal Banner"/>
+  </div>
+
+  <!-- Main API List -->
+  <div id="apiContainer" class="container">
+    <h2>HERE THE API LIST</h2>
+    <div id="app">Loading...</div>
+  </div>
+
+  <!-- Popular APIs -->
+  <div id="popularContainer" class="container">
+    <h2>Popular APIs 🔥</h2>
+    <div id="popular"></div>
+  </div>
 </main>
 
 <!-- MODAL -->
 <div id="modal" class="modal">
   <div class="modal-box">
     <h3 id="mTitle"></h3>
-
     <div class="url-box" id="mUrl"></div>
     <div class="author" id="authorTag" style="display:none"></div>
-
     <div class="response" id="mRes">Response will appear here...</div>
-
     <div class="actions">
       <button class="btn" onclick="exec()">Execute</button>
       <button class="btn secondary" onclick="copyUrl()">Copy URL</button>
@@ -288,14 +313,14 @@ let filteredData=null;
 
 /* LOAD API LIST */
 async function load(){
-  const r = await fetch("/api");
+  const r = await fetch("/api"); // replace with your API endpoint
   apiData = await r.json();
   filteredData = apiData; 
   render();
   renderPopular();
 }
 
-/* RENDER ALL CATEGORIES */
+/* RENDER MAIN API LIST */
 function render(data=filteredData){
   const app=document.getElementById("app");
   app.innerHTML="";
@@ -335,10 +360,10 @@ function render(data=filteredData){
   });
 }
 
-/* POPULAR APIs BASED ON callCount */
+/* RENDER POPULAR APIs BASED ON callCount */
 function renderPopular(){
   const popular=document.getElementById("popular");
-  popular.innerHTML="<h2 style='text-align:center;margin:14px 0'>🔥 Popular APIs</h2>";
+  popular.innerHTML="";
   const popularApis = apiData.categories.flatMap(c=>c.apis)
     .sort((a,b)=>b.callCount - a.callCount)
     .slice(0,5); // top 5
@@ -351,6 +376,7 @@ function renderPopular(){
         <div class="api-name">${api.name}</div>
         <div class="api-category">category: ${api.category}</div>
         <div class="api-endpoint">${api.endpoint}</div>
+        <div class="api-category">calls: ${api.callCount}</div>
       </div>
       <button class="btn">Test</button>
     `;
