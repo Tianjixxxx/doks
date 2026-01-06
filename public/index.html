@@ -111,7 +111,6 @@ main{padding:16px;max-width:900px;margin:auto;}
 <script>
 let apiData=null,current=null;
 
-/* LOAD API LIST */
 async function load(){
   const r = await fetch("/api");
   apiData = await r.json();
@@ -119,7 +118,6 @@ async function load(){
   renderPopular();
 }
 
-/* RENDER MAIN API LIST */
 function render(){
   const app=document.getElementById("app");
   app.innerHTML="";
@@ -153,7 +151,6 @@ function render(){
   });
 }
 
-/* POPULAR APIs */
 function renderPopular(){
   const popular=document.getElementById("popular");
   popular.innerHTML="";
@@ -177,7 +174,6 @@ function renderPopular(){
   });
 }
 
-/* MODAL */
 function open(api){
   current=api;
   document.getElementById("modal").style.display="flex";
@@ -186,23 +182,30 @@ function open(api){
   document.getElementById("mRes").textContent="Response will appear here...";
 }
 
-/* EXECUTE API */
 async function exec(){
-  const resBox=document.getElementById("mRes");
-  resBox.textContent="Loading...";
-  try{
+  const resBox = document.getElementById("mRes");
+  resBox.textContent = "Loading...";
+  try {
     const r = await fetch(`/call-api?endpoint=${encodeURIComponent(current.endpoint)}`);
     const text = await r.text();
-    // Increment callCount only for popular APIs
+
+    // Try to parse JSON and pretty-print
+    try {
+      const json = JSON.parse(text);
+      resBox.textContent = JSON.stringify(json,null,2);
+    } catch {
+      resBox.textContent = text;
+    }
+
+    // Increment callCount locally for Popular APIs
     apiData.categories.forEach(cat=>{
       cat.apis.forEach(a=>{
-        if(a.endpoint === current.endpoint) a.callCount = (a.callCount || 0)+1;
+        if(a.endpoint===current.endpoint) a.callCount++;
       });
     });
     renderPopular();
-    resBox.textContent=text;
-  }catch(e){
-    resBox.textContent="Error fetching API";
+  } catch(e){
+    resBox.textContent = "Error fetching API";
   }
 }
 
