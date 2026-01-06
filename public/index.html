@@ -45,9 +45,45 @@ header{
   z-index:20;
 }
 
+/* SEARCH BAR */
+#searchBar{
+  display:block;
+  margin:70px auto 20px;
+  max-width:400px;
+  width:90%;
+  padding:10px 14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.05);
+  color:var(--text);
+  font-size:1rem;
+}
+
+#searchBar::placeholder{
+  color:var(--muted);
+}
+
+/* IMAGE PLACEHOLDER */
+#banner{
+  display:block;
+  margin:10px auto 20px;
+  width:90%;
+  max-width:900px;
+  height:200px;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  font-size:1.2rem;
+  text-align:center;
+}
+
 /* MAIN */
 main{
-  padding:90px 16px 40px;
+  padding:16px;
   max-width:900px;
   margin:auto;
 }
@@ -221,10 +257,9 @@ main{
 <header>🍁 Autumn API Dashboard</header>
 
 <main>
-  <h1 style="text-align:center;margin-bottom:6px">Autumn API Explorer</h1>
-  <div style="text-align:center;color:var(--muted);margin-bottom:24px">
-    Cozy • Powerful • Seasonal
-  </div>
+  <input type="text" id="searchBar" placeholder="Search APIs..." />
+  <div id="https://i.imgur.com/f9UHHgk.gif">Your seasonal image/banner here 🍂</div>
+  <div id="popular"></div>
   <div id="app">Loading...</div>
 </main>
 
@@ -249,20 +284,23 @@ main{
 
 <script>
 let apiData=null,current=null;
+let filteredData=null;
 
 /* LOAD API LIST */
 async function load(){
   const r = await fetch("/api");
   apiData = await r.json();
+  filteredData = apiData; 
   render();
+  renderPopular();
 }
 
-/* RENDER */
-function render(){
+/* RENDER ALL CATEGORIES */
+function render(data=filteredData){
   const app=document.getElementById("app");
   app.innerHTML="";
 
-  apiData.categories.forEach(cat=>{
+  data.categories.forEach(cat=>{
     const box=document.createElement("div");
     box.className="section";
     box.innerHTML=`
@@ -297,6 +335,42 @@ function render(){
   });
 }
 
+/* POPULAR APIs BASED ON callCount */
+function renderPopular(){
+  const popular=document.getElementById("popular");
+  popular.innerHTML="<h2 style='text-align:center;margin:14px 0'>🔥 Popular APIs</h2>";
+  const popularApis = apiData.categories.flatMap(c=>c.apis)
+    .sort((a,b)=>b.callCount - a.callCount)
+    .slice(0,5); // top 5
+
+  popularApis.forEach(api=>{
+    const el=document.createElement("div");
+    el.className="api";
+    el.innerHTML=`
+      <div>
+        <div class="api-name">${api.name}</div>
+        <div class="api-category">category: ${api.category}</div>
+        <div class="api-endpoint">${api.endpoint}</div>
+      </div>
+      <button class="btn">Test</button>
+    `;
+    el.querySelector("button").onclick=()=>open(api);
+    popular.appendChild(el);
+  });
+}
+
+/* SEARCH */
+document.getElementById("searchBar").oninput=function(){
+  const q=this.value.toLowerCase();
+  filteredData = {
+    categories: apiData.categories.map(c=>({
+      ...c,
+      apis: c.apis.filter(a=>a.name.toLowerCase().includes(q)||a.endpoint.includes(q))
+    })).filter(c=>c.apis.length>0)
+  };
+  render();
+}
+
 /* MODAL */
 function open(api){
   current=api;
@@ -312,18 +386,22 @@ async function exec(){
   const authorTag=document.getElementById("authorTag");
   resBox.textContent="Loading...";
 
-  const r=await fetch(document.getElementById("mUrl").textContent);
-  const text=await r.text();
-
   try{
-    const json=JSON.parse(text);
-    if(json.Author){
-      authorTag.textContent="Author: "+json.Author;
-      authorTag.style.display="inline-block";
+    const r=await fetch(document.getElementById("mUrl").textContent);
+    const text=await r.text();
+
+    try{
+      const json=JSON.parse(text);
+      if(json.Author){
+        authorTag.textContent="Author: "+json.Author;
+        authorTag.style.display="inline-block";
+      }
+      resBox.textContent=JSON.stringify(json,null,2);
+    }catch{
+      resBox.textContent=text;
     }
-    resBox.textContent=JSON.stringify(json,null,2);
-  }catch{
-    resBox.textContent=text;
+  }catch(e){
+    resBox.textContent="Error fetching API";
   }
 }
 
