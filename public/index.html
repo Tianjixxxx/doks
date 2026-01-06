@@ -3,191 +3,326 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>API Control Panel</title>
+<title>API Explorer</title>
 
 <style>
-/* (UNCHANGED STYLES – trimmed for clarity) */
 :root{
-  --bg:#020617;--panel:rgba(2,6,23,.7);--glass:rgba(56,189,248,.06);
-  --border:rgba(56,189,248,.25);--accent:#38bdf8;--text:#e5f3ff;
-  --muted:#94d9ff;--error:#ef4444;--radius:14px;--blur:blur(10px);
+  --bg1:#0f172a;
+  --bg2:#1e293b;
+  --card:#243046;
+  --soft:#334155;
+  --accent:#3b82f6;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
 }
+
 *{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,monospace;color:var(--text);
-background:#020617}
-header{position:fixed;inset:0 0 auto;height:58px;
-backdrop-filter:var(--blur);background:rgba(2,6,23,.65);
-border-bottom:1px solid var(--border);display:flex;align-items:center;
-padding:0 20px;font-weight:900;z-index:20}
-main{max-width:1050px;margin:auto;padding:100px 18px 50px}
-h1{text-align:center;margin:0}
-.subtitle{text-align:center;color:var(--muted);margin:8px 0 36px}
 
-.category{border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden;background:var(--panel)}
-.cat-header{padding:16px;cursor:pointer;display:flex;justify-content:space-between}
-.cat-body{display:none;padding:14px}
-
-.api{border:1px solid rgba(56,189,248,.18);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--glass)}
-.api-name{font-weight:800}
-.api-desc{font-size:.78rem;color:var(--muted)}
-.endpoint{font-family:monospace;font-size:.72rem;padding:6px 10px;border-radius:8px;
-border:1px solid var(--border);display:inline-block;margin-bottom:10px}
-
-button{background:linear-gradient(180deg, rgba(56,189,248,.25), rgba(56,189,248,.1));
-border:1px solid var(--accent);color:var(--text);padding:7px 14px;
-font-weight:800;font-size:.72rem;border-radius:10px;cursor:pointer}
-
-.modal{position:fixed;inset:0;background:rgba(2,6,23,.85);
-backdrop-filter:var(--blur);display:none;align-items:center;justify-content:center;z-index:50}
-.modal-box{width:95%;max-width:760px;border-radius:18px;border:1px solid var(--accent);
-padding:18px;background:#020617}
-.close{float:right;color:var(--error);cursor:pointer}
-
-.field{margin:10px 0}
-.field label{font-size:.7rem;color:var(--muted);display:block;margin-bottom:4px}
-.field input{
-  width:100%;padding:10px;border-radius:10px;
-  border:1px solid var(--border);background:#020617;color:var(--text)
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
+  color:var(--text);
 }
 
-.response{white-space:pre-wrap;font-size:.75rem;border-radius:12px;
-border:1px solid var(--border);padding:14px;max-height:280px;overflow:auto}
-.copy-json{position:absolute;top:-30px;right:0}
+header{
+  position:fixed;
+  inset:0 0 auto 0;
+  height:58px;
+  background:rgba(15,23,42,.8);
+  backdrop-filter:blur(8px);
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  font-weight:800;
+  z-index:10;
+}
+
+main{
+  padding:90px 16px 40px;
+  max-width:900px;
+  margin:auto;
+}
+
+h1{
+  text-align:center;
+  margin-bottom:6px;
+}
+
+.subtitle{
+  text-align:center;
+  color:var(--muted);
+  font-size:.95rem;
+  margin-bottom:30px;
+}
+
+/* CATEGORY */
+.section{
+  background:rgba(255,255,255,.05);
+  border-radius:16px;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+
+.section-header{
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  cursor:pointer;
+  align-items:center;
+}
+
+.section-title{
+  font-weight:800;
+}
+
+.section-meta{
+  font-size:.85rem;
+  color:var(--muted);
+}
+
+.section-body{
+  display:none;
+  padding:10px;
+}
+
+/* API CARD */
+.api{
+  background:var(--card);
+  border-radius:12px;
+  padding:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.api-left{
+  max-width:70%;
+}
+
+.api-name{
+  font-weight:800;
+}
+
+.api-desc{
+  font-size:.85rem;
+  color:var(--muted);
+}
+
+.api-endpoint{
+  font-family:monospace;
+  font-size:.8rem;
+  background:rgba(255,255,255,.1);
+  padding:6px 8px;
+  border-radius:8px;
+  margin-top:6px;
+}
+
+.btn{
+  background:var(--accent);
+  border:none;
+  color:#fff;
+  padding:10px 14px;
+  border-radius:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  z-index:20;
+}
+
+.modal-box{
+  width:100%;
+  max-width:720px;
+  background:var(--soft);
+  border-radius:18px;
+  padding:20px;
+}
+
+.field{
+  margin-bottom:12px;
+}
+
+label{
+  display:block;
+  font-size:.85rem;
+  margin-bottom:6px;
+  color:var(--muted);
+}
+
+input{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  background:rgba(255,255,255,.12);
+  color:var(--text);
+}
+
+.url-box{
+  background:rgba(0,0,0,.25);
+  padding:12px;
+  border-radius:12px;
+  font-family:monospace;
+  font-size:.8rem;
+  word-break:break-all;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+}
+
+.secondary{
+  background:rgba(255,255,255,.12);
+}
+
+.response{
+  background:rgba(0,0,0,.35);
+  border-radius:12px;
+  padding:12px;
+  min-height:120px;
+  font-family:monospace;
+  font-size:.85rem;
+  margin-top:14px;
+  white-space:pre-wrap;
+}
 </style>
 </head>
-
 <body>
 
-<header>API SYSTEM DASHBOARD</header>
+<header>API Explorer</header>
 
 <main>
-  <h1>API Control Panel</h1>
-  <div class="subtitle">Interactive API Playground</div>
-  <div id="categories"></div>
+  <h1>API Collection</h1>
+  <div class="subtitle">Browse, test, and integrate endpoints easily</div>
+  <div id="app">Loading...</div>
 </main>
 
-<!-- MODAL -->
-<div class="modal" id="modal">
+<div id="modal" class="modal">
   <div class="modal-box">
-    <span class="close" onclick="closeModal()">✖</span>
-    <h3 id="m-name"></h3>
+    <h3 id="mTitle"></h3>
 
     <div class="field">
       <label>Endpoint</label>
-      <input id="endpointField" readonly />
+      <input id="mEndpoint" readonly />
     </div>
 
-    <div id="paramFields"></div>
+    <div id="mParams"></div>
 
     <div class="field">
       <label>Request URL</label>
-      <input id="requestUrl" readonly />
+      <div class="url-box" id="mUrl"></div>
     </div>
 
-    <div style="display:flex;gap:8px;margin:10px 0">
-      <button onclick="copyUrl()">Copy URL</button>
-      <button onclick="execute()">Execute Request</button>
-    </div>
+    <div class="response" id="mRes">Response will appear here...</div>
 
-    <div style="position:relative;margin-top:16px">
-      <button class="copy-json" onclick="copyResponse()">Copy</button>
-      <pre class="response" id="response">Response will appear here...</pre>
+    <div class="actions">
+      <button class="btn" onclick="exec()">Execute</button>
+      <button class="btn secondary" onclick="copyUrl()">Copy URL</button>
+      <button class="btn secondary" onclick="closeModal()">Close</button>
     </div>
   </div>
 </div>
 
 <script>
-let currentApi=null;
+let apiData=null,current=null;
 
-/* LOAD */
-fetch("/api/list").then(r=>r.json()).then(render);
+async function load(){
+  const r = await fetch("/api");
+  apiData = await r.json();
+  render();
+}
 
-function render(data){
-  const root=document.getElementById("categories");
-  Object.entries(data).forEach(([cat,apis])=>{
-    const wrap=document.createElement("div");
-    wrap.className="category";
-    wrap.innerHTML=`
-      <div class="cat-header" onclick="toggle(this)">
-        <strong>${cat}</strong><span>${apis.length} APIs</span>
+function render(){
+  const app=document.getElementById("app");
+  app.innerHTML="";
+  apiData.categories.forEach(cat=>{
+    const box=document.createElement("div");
+    box.className="section";
+    box.innerHTML=`
+      <div class="section-header">
+        <div class="section-title">${cat.name}</div>
+        <div class="section-meta">${cat.count} APIs</div>
       </div>
-      <div class="cat-body">
-        ${apis.map(api=>`
-          <div class="api">
-            <div class="api-name">${api.name}</div>
-            <div class="api-desc">${api.description}</div>
-            <div class="endpoint">${api.method} ${api.endpoint}</div>
-            <button onclick='openModal(${JSON.stringify(api)})'>Try</button>
-          </div>`).join("")}
-      </div>`;
-    root.appendChild(wrap);
+      <div class="section-body"></div>
+    `;
+    const body=box.querySelector(".section-body");
+    cat.apis.forEach(api=>{
+      const el=document.createElement("div");
+      el.className="api";
+      el.innerHTML=`
+        <div class="api-left">
+          <div class="api-name">${api.name}</div>
+          <div class="api-desc">${api.description||""}</div>
+          <div class="api-endpoint">${api.endpoint}</div>
+        </div>
+        <button class="btn">Test</button>
+      `;
+      el.querySelector("button").onclick=()=>open(api);
+      body.appendChild(el);
+    });
+    box.querySelector(".section-header").onclick=()=>{
+      body.style.display=body.style.display==="block"?"none":"block";
+    };
+    app.appendChild(box);
   });
 }
 
-function toggle(el){
-  const b=el.nextElementSibling;
-  b.style.display=b.style.display==="block"?"none":"block";
-}
-
-/* MODAL */
-function openModal(api){
-  currentApi=api;
-  document.getElementById("m-name").innerText=api.name;
-  document.getElementById("endpointField").value=api.endpoint;
-  document.getElementById("paramFields").innerHTML="";
-
-  (api.params||[]).forEach(p=>{
-    document.getElementById("paramFields").innerHTML+=`
-      <div class="field">
-        <label>${p.name}${p.required?" *":""}</label>
-        <input data-param="${p.name}" placeholder="${p.placeholder||""}">
-      </div>`;
-  });
-
-  updateUrl();
+function open(api){
+  current=api;
   document.getElementById("modal").style.display="flex";
+  document.getElementById("mTitle").textContent=api.name;
+  document.getElementById("mEndpoint").value=api.endpoint;
+  const p=document.getElementById("mParams");
+  p.innerHTML="";
+  (api.params||[]).forEach(x=>{
+    const f=document.createElement("div");
+    f.className="field";
+    f.innerHTML=`<label>${x.name}</label><input id="p_${x.name}" />`;
+    p.appendChild(f);
+  });
+  updateUrl();
+}
+
+function updateUrl(){
+  if(!current)return;
+  const q=new URLSearchParams();
+  (current.params||[]).forEach(x=>{
+    const v=document.getElementById("p_"+x.name)?.value;
+    if(v) q.append(x.name,v);
+  });
+  document.getElementById("mUrl").textContent=
+    location.origin+current.endpoint+(q.toString()?("?"+q):"");
+}
+
+async function exec(){
+  updateUrl();
+  const r=await fetch(document.getElementById("mUrl").textContent);
+  document.getElementById("mRes").textContent=await r.text();
+}
+
+function copyUrl(){
+  navigator.clipboard.writeText(document.getElementById("mUrl").textContent);
 }
 
 function closeModal(){
   document.getElementById("modal").style.display="none";
 }
 
-/* BUILD URL */
-function updateUrl(){
-  const params=[...document.querySelectorAll("[data-param]")]
-    .filter(i=>i.value)
-    .map(i=>`${i.dataset.param}=${encodeURIComponent(i.value)}`)
-    .join("&");
-  const url=location.origin+currentApi.endpoint+(params?"?"+params:"");
-  document.getElementById("requestUrl").value=url;
-  return url;
-}
-
-document.addEventListener("input",e=>{
-  if(e.target.dataset.param) updateUrl();
-});
-
-/* EXECUTE */
-async function execute(){
-  const box=document.getElementById("response");
-  box.textContent="Loading...";
-  try{
-    const r=await fetch(updateUrl());
-    const t=await r.text();
-    try{
-      const j=JSON.parse(t);
-      if(!j.author) j.author="Ry";
-      box.textContent=JSON.stringify(j,null,2);
-    }catch{box.textContent=t}
-  }catch(e){box.textContent=e.message}
-}
-
-function copyUrl(){
-  navigator.clipboard.writeText(updateUrl());
-}
-function copyResponse(){
-  navigator.clipboard.writeText(document.getElementById("response").textContent);
-}
+document.addEventListener("input",updateUrl);
+load();
 </script>
 
 </body>
