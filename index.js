@@ -8,13 +8,11 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static("public"));
 
-// Path to your API folder
 const API_DIR = path.join(__dirname, "api");
 const categories = {};
 
 /* 🔁 LOAD APIs */
 function loadApis() {
-  // Loop through each subfolder in /api
   for (const folder of fs.readdirSync(API_DIR)) {
     const folderPath = path.join(API_DIR, folder);
     if (!fs.statSync(folderPath).isDirectory()) continue;
@@ -25,39 +23,34 @@ function loadApis() {
       const apiPath = path.join(folderPath, file);
       const api = require(apiPath);
 
-      if (!api.meta || !api.onStart) continue; // skip if invalid
+      if (!api.onStart) continue;
 
-      const {
-        name,
-        version,
-        author,
-        description,
-        category = folder.toLowerCase(),
-        method = "GET",
-        path: endpoint
-      } = api.meta;
+      const fileName = path.basename(file, ".js");
+      const meta = api.meta || {};
+      const category = meta.category?.toLowerCase() || folder.toLowerCase() || "uncategorized";
+      const endpoint = meta.endpoint || `/${category}/${fileName}`;
+      const method = (meta.method || "GET").toLowerCase();
 
-      // Register endpoint dynamically
-      const httpMethod = method.toLowerCase();
-      app[httpMethod](endpoint, async (req, res, next) => {
+      const apiObj = {
+        name: meta.name || fileName,
+        description: meta.description || "",
+        endpoint,
+        method: method.toUpperCase(),
+        category,
+        _apiRef: api
+      };
+
+      const catKey = category.toUpperCase();
+      categories[catKey] ??= [];
+      categories[catKey].push(apiObj);
+
+      // Attach route
+      app[method](endpoint, async (req, res, next) => {
         try {
           await api.onStart(req, res, next);
         } catch (err) {
           next(err);
         }
-      });
-
-      // Add to categories for dashboard
-      const catKey = category.toUpperCase();
-      categories[catKey] ??= [];
-      categories[catKey].push({
-        name,
-        version,
-        author,
-        description,
-        category,
-        method: method.toUpperCase(),
-        endpoint
       });
     }
   }
@@ -70,12 +63,18 @@ app.get("/api", (req, res) => {
   const responseCategories = Object.keys(categories).map(cat => ({
     name: cat,
     count: categories[cat].length,
-    apis: categories[cat]
+    apis: categories[cat].map(a => ({
+      name: a.name,
+      description: a.description,
+      endpoint: a.endpoint,
+      method: a.method,
+      category: a.category
+    }))
   }));
   res.json({ status: true, categories: responseCategories });
 });
 
-/* 🔁 CALL-API: proxy call to endpoint */
+/* 🔁 CALL-API: execute API and return raw response */
 app.get("/call-api", async (req, res) => {
   const { endpoint } = req.query;
   if (!endpoint) return res.status(400).send("endpoint required");
@@ -88,26 +87,19 @@ app.get("/call-api", async (req, res) => {
   }
   if (!found) return res.status(404).send("API not found");
 
+  let sent = false;
+  const resProxy = {
+    json: (data) => { if (!sent) { sent = true; res.json(data); } },
+    send: (data) => { if (!sent) { sent = true; res.send(data); } }
+  };
   try {
-    // Dynamically require the API handler
-    const folderPath = path.join(API_DIR, found.category.toLowerCase());
-    const apiFile = fs.readdirSync(folderPath)
-      .filter(f => f.endsWith(".js"))
-      .map(f => path.join(folderPath, f))
-      .find(f => require(f).meta.path === endpoint);
-
-    if (!apiFile) return res.status(404).send("API file not found");
-
-    const apiModule = require(apiFile);
-    await apiModule.onStart(req, res);
-
+    await found._apiRef.onStart(req, resProxy);
   } catch (err) {
-    console.error(err);
     res.status(500).send("API execution error");
   }
 });
 
-/* ❌ 404 fallback */
+/* ❌ 404 */
 app.use((req, res) => res.status(404).send("Not Found"));
 
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
