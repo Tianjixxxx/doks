@@ -8,59 +8,50 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static("public"));
 
-/* 🌍 GLOBAL RESPONSE AUTHOR */
-app.use((req,res,next)=>{
-  const originalJson = res.json.bind(res);
-  res.json = (data)=>{
-    if(typeof data === "object" && data!==null){
-      data = { Author: "Ry", ...data };
-    }
-    return originalJson(data);
-  };
-  next();
-});
-
-const API_DIR = path.join(__dirname,"api");
+const API_DIR = path.join(__dirname, "api");
 const categories = {};
 
-/* 🔁 LOAD APIs WITH callCount */
-function loadApis(){
-  for(const folder of fs.readdirSync(API_DIR)){
-    const folderPath = path.join(API_DIR,folder);
-    if(!fs.statSync(folderPath).isDirectory()) continue;
+/* 🔁 LOAD APIs */
+function loadApis() {
+  for (const folder of fs.readdirSync(API_DIR)) {
+    const folderPath = path.join(API_DIR, folder);
+    if (!fs.statSync(folderPath).isDirectory()) continue;
 
-    for(const file of fs.readdirSync(folderPath)){
-      if(!file.endsWith(".js")) continue;
+    for (const file of fs.readdirSync(folderPath)) {
+      if (!file.endsWith(".js")) continue;
 
-      const apiPath = path.join(folderPath,file);
+      const apiPath = path.join(folderPath, file);
       const api = require(apiPath);
-      if(!api.onStart) continue;
 
-      const fileName = path.basename(file,".js");
+      if (!api.onStart) continue;
+
+      const fileName = path.basename(file, ".js");
       const meta = api.meta || {};
       const category = meta.category?.toLowerCase() || folder.toLowerCase() || "uncategorized";
       const endpoint = meta.endpoint || `/${category}/${fileName}`;
       const method = (meta.method || "GET").toLowerCase();
 
-      api.callCount = 0;
-
-      app[method](endpoint, async (req,res,next)=>{
-        try{
-          api.callCount++;
-          await api.onStart(req,res,next);
-        }catch(err){next(err);}
-      });
-
-      const catKey = category.toUpperCase();
-      categories[catKey] ??= [];
-      categories[catKey].push({
+      // Store API reference
+      const apiObj = {
         name: meta.name || fileName,
         description: meta.description || "",
         endpoint,
         method: method.toUpperCase(),
         category,
-        callCount: 0,
-        _apiRef: api
+        _apiRef: api // store reference for execution
+      };
+
+      const catKey = category.toUpperCase();
+      categories[catKey] ??= [];
+      categories[catKey].push(apiObj);
+
+      // Attach route
+      app[method](endpoint, async (req, res, next) => {
+        try {
+          await api.onStart(req, res, next);
+        } catch (err) {
+          next(err);
+        }
       });
     }
   }
@@ -69,38 +60,50 @@ function loadApis(){
 loadApis();
 
 /* 📦 DASHBOARD API */
-app.get("/api",(req,res)=>{
-  const responseCategories = Object.keys(categories).map(cat=>({
+app.get("/api", (req, res) => {
+  const responseCategories = Object.keys(categories).map(cat => ({
     name: cat,
     count: categories[cat].length,
-    apis: categories[cat].map(a=>({
+    apis: categories[cat].map(a => ({
       name: a.name,
       description: a.description,
       endpoint: a.endpoint,
       method: a.method,
       category: a.category,
-      callCount: a._apiRef.callCount
+      callCount: 0 // front-end will track call counts
     }))
   }));
-  res.json({ status:true, categories: responseCategories });
+  res.json({ status: true, categories: responseCategories });
 });
 
 /* 🔁 CALL-API ENDPOINT */
-app.get("/call-api",(req,res)=>{
-  const {endpoint} = req.query;
-  if(!endpoint) return res.status(400).json({error:"endpoint required"});
+app.get("/call-api", async (req, res) => {
+  const { endpoint } = req.query;
+  if (!endpoint) return res.status(400).send("endpoint required");
+
   let found = null;
-  for(const cat of Object.values(categories)){
-    for(const a of cat){
-      if(a.endpoint === endpoint) found = a;
+  for (const cat of Object.values(categories)) {
+    for (const a of cat) {
+      if (a.endpoint === endpoint) found = a;
     }
   }
-  if(!found) return res.status(404).json({error:"API not found"});
-  found._apiRef.callCount++;
-  res.json({endpoint:found.endpoint,timestamp:new Date(),callCount:found._apiRef.callCount});
+  if (!found) return res.status(404).send("API not found");
+
+  // Call the original API handler
+  // Capture response as JSON if possible, else raw text
+  let sent = false;
+  const resProxy = {
+    json: (data) => { if (!sent) { sent = true; res.json(data); } },
+    send: (data) => { if (!sent) { sent = true; res.send(data); } }
+  };
+  try {
+    await found._apiRef.onStart(req, resProxy);
+  } catch (err) {
+    res.status(500).send("API execution error");
+  }
 });
 
 /* ❌ 404 */
-app.use((req,res)=>res.status(404).json({status:false,message:"Not Found"}));
+app.use((req, res) => res.status(404).send("Not Found"));
 
-app.listen(PORT,()=>console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
