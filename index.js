@@ -8,54 +8,65 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static("public"));
 
-/* 🔐 GLOBAL RESPONSE WRAPPER */
+/* 🌍 GLOBAL RESPONSE AUTHOR */
 app.use((req, res, next) => {
   const originalJson = res.json.bind(res);
-
   res.json = (data) => {
-    // If response is already an object, inject Author
     if (typeof data === "object" && data !== null) {
-      data = {
-        Author: "Ry",
-        ...data
-      };
+      data = { Author: "Ry", ...data };
     }
     return originalJson(data);
   };
-
   next();
 });
 
 const API_DIR = path.join(__dirname, "api");
 const categories = {};
 
-/* 🔁 LOAD APIs (CATEGORY FROM FOLDER) */
-function loadApis(dir, parentCategory = null) {
-  for (const file of fs.readdirSync(dir)) {
-    const full = path.join(dir, file);
+/* 🔁 LOAD APIs */
+function loadApis() {
+  for (const folder of fs.readdirSync(API_DIR)) {
+    const folderPath = path.join(API_DIR, folder);
+    if (!fs.statSync(folderPath).isDirectory()) continue;
 
-    if (fs.statSync(full).isDirectory()) {
-      loadApis(full, file.toUpperCase());
-      continue;
+    for (const file of fs.readdirSync(folderPath)) {
+      if (!file.endsWith(".js")) continue;
+
+      const apiPath = path.join(folderPath, file);
+      const api = require(apiPath);
+
+      if (!api.onStart) continue;
+
+      const fileName = path.basename(file, ".js");
+      const meta = api.meta || {};
+
+      const category =
+        meta.category ||
+        folder.toLowerCase() ||
+        "uncategorized";
+
+      const endpoint =
+        meta.endpoint ||
+        `/${category}/${fileName}`;
+
+      const method = (meta.method || "GET").toLowerCase();
+
+      app[method](endpoint, api.onStart);
+
+      const catKey = category.toUpperCase();
+      categories[catKey] ??= [];
+      categories[catKey].push({
+        name: meta.name || fileName,
+        description: meta.description || "",
+        endpoint,
+        method: method.toUpperCase(),
+        category
+      });
     }
-
-    if (!file.endsWith(".js")) continue;
-
-    const api = require(full);
-    if (!api.meta || !api.onStart) continue;
-
-    const meta = api.meta;
-    const method = meta.method.toLowerCase();
-    const category = meta.category || parentCategory || "UNCATEGORIZED";
-
-    app[method](meta.endpoint, api.onStart);
-
-    if (!categories[category]) categories[category] = [];
-    categories[category].push({ ...meta, category });
   }
 }
 
-loadApis(API_DIR);
+loadApis();
 
 /* 📦 DASHBOARD API */
 app.get("/api", (req, res) => {
@@ -71,19 +82,7 @@ app.get("/api", (req, res) => {
 
 /* ❌ 404 */
 app.use((req, res) => {
-  res.status(404).json({
-    status: false,
-    message: "Not Found"
-  });
-});
-
-/* 💥 500 */
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({
-    status: false,
-    message: "Server Error"
-  });
+  res.status(404).json({ status: false, message: "Not Found" });
 });
 
 app.listen(PORT, () => {
