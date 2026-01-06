@@ -6,15 +6,9 @@
 <title>Autumn API Dashboard</title>
 <style>
 :root{
-  --bg1:#2b160a;
-  --bg2:#4a2412;
-  --card:#5a2d15;
-  --soft:#6b3a1e;
-  --accent:#f97316;
-  --accent-2:#fb923c;
-  --text:#fff7ed;
-  --muted:#fdba74;
-  --border:#92400e;
+  --bg1:#2b160a; --bg2:#4a2412; --card:#5a2d15; --soft:#6b3a1e;
+  --accent:#f97316; --accent-2:#fb923c; --text:#fff7ed;
+  --muted:#fdba74; --border:#92400e;
 }
 *{box-sizing:border-box;}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI;background:radial-gradient(circle at top,var(--bg2),var(--bg1));color:var(--text);overflow-x:hidden;}
@@ -43,9 +37,11 @@ main{padding:16px;max-width:900px;margin:auto;}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
 .loading-dashboard{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--muted);}
 .spinner{border:6px solid rgba(255,255,255,0.1);border-top:6px solid var(--accent);border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin-bottom:12px;}
-@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 .leaf{position:fixed;top:-10%;font-size:24px;pointer-events:none;animation:fall linear infinite;z-index:5;opacity:.9;}
 @keyframes fall{0%{transform:translateY(-10vh) rotate(0deg)}100%{transform:translateY(110vh) rotate(360deg)}}
+input{background:rgba(0,0,0,.3);color:#fff;border:1px solid #92400e;border-radius:6px;padding:6px;width:100%;margin-bottom:10px;}
+label{display:block;margin-bottom:4px;font-weight:bold;}
 </style>
 </head>
 <body>
@@ -54,19 +50,16 @@ main{padding:16px;max-width:900px;margin:auto;}
 <main>
   <div id="banner"><img src="https://i.imgur.com/f9UHHgk.gif" alt="Seasonal Banner" /></div>
 
-  <!-- Loading -->
   <div id="loading" class="loading-dashboard">
     <div class="spinner"></div>
     <div>Loading Dashboard...</div>
   </div>
 
-  <!-- API List -->
   <div id="apiContainer" class="container" style="display:none;">
     <h2>API List</h2>
     <div id="app"></div>
   </div>
 
-  <!-- Popular APIs (just list, no count) -->
   <div id="popularContainer" class="container">
     <h2>Popular APIs 🔥</h2>
     <div id="popular"></div>
@@ -77,6 +70,7 @@ main{padding:16px;max-width:900px;margin:auto;}
   <div class="modal-box">
     <h3 id="mTitle"></h3>
     <div class="url-box" id="mUrl"></div>
+    <div id="inputFields"></div>
     <div class="response" id="mRes">Response will appear here...</div>
     <div class="actions">
       <button class="btn" onclick="exec()">Execute</button>
@@ -88,9 +82,9 @@ main{padding:16px;max-width:900px;margin:auto;}
 </div>
 
 <script>
-let apiData=null,current=null;
+let apiData = null, current = null;
 
-async function load(){
+async function load() {
   const r = await fetch("/api");
   apiData = await r.json();
 
@@ -101,24 +95,24 @@ async function load(){
   renderPopular();
 }
 
-function render(){
-  const app=document.getElementById("app");
-  app.innerHTML="";
-  apiData.categories.forEach(cat=>{
-    const box=document.createElement("div");
-    box.className="section";
-    box.innerHTML=`
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+  apiData.categories.forEach(cat => {
+    const box = document.createElement("div");
+    box.className = "section";
+    box.innerHTML = `
       <div class="section-header">
         <div class="section-title">${cat.name.toLowerCase()}</div>
         <div class="section-meta">${cat.count} APIs</div>
       </div>
       <div class="section-body"></div>
     `;
-    const body=box.querySelector(".section-body");
-    cat.apis.forEach(api=>{
-      const el=document.createElement("div");
-      el.className="api";
-      el.innerHTML=`
+    const body = box.querySelector(".section-body");
+    cat.apis.forEach(api => {
+      const el = document.createElement("div");
+      el.className = "api";
+      el.innerHTML = `
         <div>
           <div class="api-name">${api.name}</div>
           <div class="api-category">category: ${api.category}</div>
@@ -126,22 +120,24 @@ function render(){
         </div>
         <button class="btn">Test</button>
       `;
-      el.querySelector("button").onclick=()=>open(api);
+      el.querySelector("button").onclick = () => open(api);
       body.appendChild(el);
     });
-    box.querySelector(".section-header").onclick=()=>{body.style.display = body.style.display==="block"?"none":"block";}
+    box.querySelector(".section-header").onclick = () => {
+      body.style.display = body.style.display === "block" ? "none" : "block";
+    }
     app.appendChild(box);
   });
 }
 
-function renderPopular(){
-  const popular=document.getElementById("popular");
-  popular.innerHTML="";
-  const popularApis = apiData.categories.flatMap(c=>c.apis);
-  popularApis.forEach(api=>{
-    const el=document.createElement("div");
-    el.className="api";
-    el.innerHTML=`
+function renderPopular() {
+  const popular = document.getElementById("popular");
+  popular.innerHTML = "";
+  const popularApis = apiData.categories.flatMap(c => c.apis);
+  popularApis.forEach(api => {
+    const el = document.createElement("div");
+    el.className = "api";
+    el.innerHTML = `
       <div>
         <div class="api-name">${api.name}</div>
         <div class="api-category">category: ${api.category}</div>
@@ -149,24 +145,47 @@ function renderPopular(){
       </div>
       <button class="btn">Test</button>
     `;
-    el.querySelector("button").onclick=()=>open(api);
+    el.querySelector("button").onclick = () => open(api);
     popular.appendChild(el);
   });
 }
 
-function open(api){
-  current=api;
-  document.getElementById("modal").style.display="flex";
-  document.getElementById("mTitle").textContent=api.name;
-  document.getElementById("mUrl").textContent=location.origin+api.endpoint;
-  document.getElementById("mRes").textContent="Response will appear here...";
+function open(api) {
+  current = api;
+  document.getElementById("modal").style.display = "flex";
+  document.getElementById("mTitle").textContent = api.name;
+  document.getElementById("mUrl").textContent = location.origin + api.endpoint;
+  document.getElementById("mRes").textContent = "Response will appear here...";
+
+  // Generate input fields dynamically
+  const inputDiv = document.getElementById("inputFields");
+  inputDiv.innerHTML = "";
+  if (api.params && api.params.length) {
+    api.params.forEach(p => {
+      const field = document.createElement("div");
+      field.innerHTML = `
+        <label>${p.label}${p.required ? " *" : ""}</label>
+        <input type="text" name="${p.name}" placeholder="${p.placeholder || ""}" ${p.required ? "required" : ""}/>
+      `;
+      inputDiv.appendChild(field);
+    });
+  }
 }
 
-async function exec(){
+async function exec() {
   const resBox = document.getElementById("mRes");
   resBox.textContent = "Loading...";
+
+  // collect input values
+  const inputs = document.querySelectorAll("#inputFields input");
+  const params = [];
+  inputs.forEach(i => {
+    if (i.value) params.push(`${encodeURIComponent(i.name)}=${encodeURIComponent(i.value)}`);
+  });
+  const queryString = params.join("&");
+
   try {
-    const r = await fetch(`/call-api?endpoint=${encodeURIComponent(current.endpoint)}`);
+    const r = await fetch(`/call-api?endpoint=${encodeURIComponent(current.endpoint)}&${queryString}`);
     const text = await r.text();
     try {
       const json = JSON.parse(text);
@@ -174,14 +193,14 @@ async function exec(){
     } catch {
       resBox.textContent = text;
     }
-  } catch(e){
+  } catch (e) {
     resBox.textContent = "Error fetching API";
   }
 }
 
-function copyUrl(){navigator.clipboard.writeText(document.getElementById("mUrl").textContent);}
-function copyResponse(){navigator.clipboard.writeText(document.getElementById("mRes").textContent);}
-function closeModal(){document.getElementById("modal").style.display="none";}
+function copyUrl() { navigator.clipboard.writeText(document.getElementById("mUrl").textContent); }
+function copyResponse() { navigator.clipboard.writeText(document.getElementById("mRes").textContent); }
+function closeModal() { document.getElementById("modal").style.display = "none"; }
 
 /* FALLING LEAVES */
 const leaves = ["🍁","🍂","🍃"];
