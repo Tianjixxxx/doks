@@ -31,15 +31,8 @@ header{
   font-weight:900;letter-spacing:.5px;
   border-bottom:1px solid var(--border);z-index:20;
 }
-#searchBar,#apiKey{
-  display:block;margin:70px auto 16px;
-  max-width:400px;width:90%;
-  padding:10px 14px;border-radius:12px;border:1px solid var(--border);
-  background:rgba(255,255,255,.05);color:var(--text);font-size:1rem;
-}
-#searchBar::placeholder,#apiKey::placeholder{color:var(--muted);}
 #banner{
-  display:block;margin:0 auto 24px;width:90%;max-width:900px;height:200px;
+  display:block;margin:70px auto 24px;width:90%;max-width:900px;height:200px;
   border-radius:16px;overflow:hidden;border:1px solid var(--border);
 }
 #banner img{width:100%;height:100%;object-fit:cover;border-radius:16px;}
@@ -88,17 +81,15 @@ main{padding:16px;max-width:900px;margin:auto;}
 <header>🍁 Autumn API Dashboard</header>
 
 <main>
-  <!-- Search -->
-  <input type="text" id="searchBar" placeholder="Search APIs..." />
-  <!-- API Key Input -->
-  <input type="text" id="apiKey" placeholder="Enter API Key (default: eadgbe)" value="eadgbe" />
   <!-- Banner -->
   <div id="banner"><img src="https://i.imgur.com/f9UHHgk.gif" alt="Seasonal Banner"/></div>
+
   <!-- Main API List -->
   <div id="apiContainer" class="container">
-    <h2>HERE THE API LIST</h2>
+    <h2>API List</h2>
     <div id="app">Loading...</div>
   </div>
+
   <!-- Popular APIs -->
   <div id="popularContainer" class="container">
     <h2>Popular APIs 🔥</h2>
@@ -124,22 +115,20 @@ main{padding:16px;max-width:900px;margin:auto;}
 
 <script>
 let apiData=null,current=null;
-let filteredData=null;
 
 /* LOAD API LIST */
 async function load(){
   const r = await fetch("/api");
   apiData = await r.json();
-  filteredData = apiData;
   render();
   renderPopular();
 }
 
 /* RENDER MAIN API LIST */
-function render(data=filteredData){
+function render(){
   const app=document.getElementById("app");
   app.innerHTML="";
-  data.categories.forEach(cat=>{
+  apiData.categories.forEach(cat=>{
     const box=document.createElement("div");
     box.className="section";
     box.innerHTML=`
@@ -193,18 +182,6 @@ function renderPopular(){
   });
 }
 
-/* SEARCH */
-document.getElementById("searchBar").oninput=function(){
-  const q=this.value.toLowerCase();
-  filteredData = {
-    categories: apiData.categories.map(c=>({
-      ...c,
-      apis: c.apis.filter(a=>a.name.toLowerCase().includes(q)||a.endpoint.includes(q))
-    })).filter(c=>c.apis.length>0)
-  };
-  render();
-}
-
 /* MODAL */
 function open(api){
   current=api;
@@ -215,15 +192,13 @@ function open(api){
   document.getElementById("mRes").textContent="Response will appear here...";
 }
 
-/* EXECUTE API WITH API KEY AND UPDATE CALL COUNT */
+/* EXECUTE API AND UPDATE CALL COUNT */
 async function exec(){
   const resBox=document.getElementById("mRes");
   const authorTag=document.getElementById("authorTag");
   resBox.textContent="Loading...";
-  const key = document.getElementById("apiKey").value || "eadgbe";
-
   try{
-    const r = await fetch(`/call-api?endpoint=${encodeURIComponent(current.endpoint)}&key=${key}`);
+    const r = await fetch(`/call-api?endpoint=${encodeURIComponent(current.endpoint)}`);
     const json = await r.json();
     // update callCount in local apiData
     apiData.categories.forEach(cat=>{
