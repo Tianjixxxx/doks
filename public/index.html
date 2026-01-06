@@ -186,7 +186,7 @@ async function exec(){
   const resBox = document.getElementById("mRes");
   resBox.textContent = "Loading...";
   try {
-    const r = await fetch(`https://burat-api.onrender.com/call-api?endpoint=${encodeURIComponent(current.endpoint)}`);
+    const r = await fetch(`/call-api?endpoint=${encodeURIComponent(current.endpoint)}`);
     const text = await r.text();
 
     // Try to parse JSON and pretty-print
