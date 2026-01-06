@@ -31,14 +31,16 @@ function loadApis() {
       const endpoint = meta.endpoint || `/${category}/${fileName}`;
       const method = (meta.method || "GET").toLowerCase();
 
-      // Store API reference
+      // Initialize persistent call count
+      api.callCount = 0;
+
       const apiObj = {
         name: meta.name || fileName,
         description: meta.description || "",
         endpoint,
         method: method.toUpperCase(),
         category,
-        _apiRef: api // store reference for execution
+        _apiRef: api
       };
 
       const catKey = category.toUpperCase();
@@ -48,6 +50,7 @@ function loadApis() {
       // Attach route
       app[method](endpoint, async (req, res, next) => {
         try {
+          api.callCount++; // increment persistent call count
           await api.onStart(req, res, next);
         } catch (err) {
           next(err);
@@ -70,13 +73,13 @@ app.get("/api", (req, res) => {
       endpoint: a.endpoint,
       method: a.method,
       category: a.category,
-      callCount: 0 // front-end will track call counts
+      callCount: a._apiRef.callCount // send persistent call count
     }))
   }));
   res.json({ status: true, categories: responseCategories });
 });
 
-/* 🔁 CALL-API ENDPOINT */
+/* ❌ CALL-API: just execute API and return raw response */
 app.get("/call-api", async (req, res) => {
   const { endpoint } = req.query;
   if (!endpoint) return res.status(400).send("endpoint required");
@@ -89,8 +92,7 @@ app.get("/call-api", async (req, res) => {
   }
   if (!found) return res.status(404).send("API not found");
 
-  // Call the original API handler
-  // Capture response as JSON if possible, else raw text
+  // Execute the original API
   let sent = false;
   const resProxy = {
     json: (data) => { if (!sent) { sent = true; res.json(data); } },
