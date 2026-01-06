@@ -2,13 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>API Explorer</title>
 
 <style>
 :root{
-  --bg:#0f172a;
-  --card:#1e293b;
-  --soft:#020617;
+  --bg1:#0f172a;
+  --bg2:#1e293b;
+  --card:#243046;
+  --soft:#334155;
   --accent:#3b82f6;
   --text:#e5e7eb;
   --muted:#94a3b8;
@@ -18,47 +20,91 @@
 
 body{
   margin:0;
-  font-family:system-ui;
-  background:var(--bg);
+  font-family:system-ui,-apple-system,Segoe UI;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
   color:var(--text);
 }
 
+header{
+  position:fixed;
+  inset:0 0 auto 0;
+  height:58px;
+  background:rgba(15,23,42,.8);
+  backdrop-filter:blur(8px);
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  font-weight:800;
+  z-index:10;
+}
+
 main{
-  padding:80px 16px;
+  padding:90px 16px 40px;
   max-width:900px;
   margin:auto;
 }
 
+.subtitle{
+  text-align:center;
+  color:var(--muted);
+  font-size:.95rem;
+  margin-bottom:30px;
+}
+
+/* CATEGORY */
+.section{
+  background:rgba(255,255,255,.05);
+  border-radius:16px;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+
+.section-header{
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  cursor:pointer;
+}
+
+.section-body{
+  display:none;
+  padding:10px;
+}
+
+/* API CARD */
 .api{
   background:var(--card);
+  border-radius:12px;
   padding:14px;
-  border-radius:14px;
-  margin-bottom:12px;
   display:flex;
   justify-content:space-between;
   align-items:center;
+  margin-bottom:10px;
 }
 
-.method{
-  font-size:.75rem;
-  padding:4px 8px;
-  border-radius:6px;
-  background:var(--accent);
-  display:inline-block;
-  margin-bottom:4px;
+.api-left{max-width:70%}
+.api-desc{font-size:.85rem;color:var(--muted)}
+.api-endpoint{
+  font-family:monospace;
+  font-size:.8rem;
+  background:rgba(255,255,255,.1);
+  padding:6px 8px;
+  border-radius:8px;
+  margin-top:6px;
+  word-break:break-all;
 }
 
 .btn{
   background:var(--accent);
   border:none;
   color:#fff;
-  padding:8px 14px;
+  padding:10px 14px;
   border-radius:10px;
-  font-weight:700;
+  font-weight:800;
   cursor:pointer;
 }
 
-.btn.secondary{
+.secondary{
   background:rgba(255,255,255,.12);
 }
 
@@ -66,188 +112,206 @@ main{
 .modal{
   position:fixed;
   inset:0;
+  background:rgba(0,0,0,.6);
   display:none;
   align-items:center;
   justify-content:center;
-  background:rgba(0,0,0,.6);
   padding:16px;
   z-index:20;
 }
 
-.box{
+.modal-box{
   width:100%;
-  max-width:760px;
-  max-height:90vh;
-  background:var(--card);
+  max-width:720px;
+  background:var(--soft);
   border-radius:18px;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
+  padding:20px;
 }
 
-.box-header{
-  padding:18px;
-  font-weight:800;
-  border-bottom:1px solid rgba(255,255,255,.08);
-}
-
-.box-body{
-  padding:16px;
-  overflow:auto;
-}
-
-.field{
-  margin-bottom:10px;
-}
-
+.field{margin-bottom:12px}
+label{font-size:.85rem;color:var(--muted)}
 input{
   width:100%;
   padding:10px;
   border-radius:10px;
   border:none;
-  background:rgba(255,255,255,.1);
+  background:rgba(255,255,255,.12);
   color:var(--text);
 }
 
+.url-box{
+  background:rgba(0,0,0,.25);
+  padding:12px;
+  border-radius:12px;
+  font-family:monospace;
+  font-size:.8rem;
+  word-break:break-all;
+}
+
+/* RESPONSE */
 .response{
-  background:var(--soft);
+  background:rgba(0,0,0,.35);
   border-radius:12px;
   padding:12px;
-  margin-top:14px;
-  height:260px;
+  height:220px;
   overflow:auto;
   font-family:monospace;
   font-size:.85rem;
+  margin-top:14px;
   white-space:pre;
 }
 
 .actions{
-  padding:14px;
   display:flex;
   gap:10px;
-  border-top:1px solid rgba(255,255,255,.08);
-}
-
-.loading{
-  opacity:.6;
+  flex-wrap:wrap;
+  margin-top:14px;
 }
 </style>
 </head>
 
 <body>
+<header>API Explorer</header>
 
 <main>
-  <h1>API Explorer</h1>
-  <div id="app"></div>
+  <h1 style="text-align:center">API Collection</h1>
+  <div class="subtitle">Browse, test, and integrate endpoints easily</div>
+  <div id="app">Loading...</div>
 </main>
 
 <div id="modal" class="modal">
-  <div class="box">
-    <div class="box-header" id="title"></div>
+  <div class="modal-box">
+    <h3 id="mTitle"></h3>
 
-    <div class="box-body">
-      <div id="params"></div>
-      <div class="response" id="res">Waiting for response…</div>
+    <div class="field">
+      <label>Endpoint</label>
+      <input id="mEndpoint" readonly />
     </div>
+
+    <div id="mParams"></div>
+
+    <div class="field">
+      <label>Request URL</label>
+      <div class="url-box" id="mUrl"></div>
+    </div>
+
+    <div class="response" id="mRes">Response will appear here...</div>
 
     <div class="actions">
       <button class="btn" onclick="exec()">Execute</button>
+      <button class="btn secondary" onclick="copyUrl()">Copy URL</button>
+      <button class="btn secondary" onclick="copyResponse()">Copy Response</button>
       <button class="btn secondary" onclick="closeModal()">Close</button>
     </div>
   </div>
 </div>
 
 <script>
-let current;
+let apiData=null,current=null;
 
 async function load(){
   const r = await fetch("/api");
-  const data = await r.json();
-  render(data.categories);
+  apiData = await r.json();
+  render();
 }
 
-function render(categories){
-  const app = document.getElementById("app");
-  categories.forEach(cat=>{
+function render(){
+  const app=document.getElementById("app");
+  app.innerHTML="";
+  apiData.categories.forEach(cat=>{
+    const box=document.createElement("div");
+    box.className="section";
+    box.innerHTML=`
+      <div class="section-header">
+        <strong>${cat.name}</strong>
+        <span>${cat.count} APIs</span>
+      </div>
+      <div class="section-body"></div>
+    `;
+    const body=box.querySelector(".section-body");
+
     cat.apis.forEach(api=>{
       const el=document.createElement("div");
       el.className="api";
       el.innerHTML=`
-        <div>
-          <div class="method">${api.method}</div>
-          <b>${api.name}</b>
-          <div style="color:var(--muted)">${api.endpoint}</div>
+        <div class="api-left">
+          <div><strong>${api.name}</strong></div>
+          <div class="api-desc">${api.description||""}</div>
+          <div class="api-endpoint">${api.endpoint}</div>
         </div>
         <button class="btn">Test</button>
       `;
       el.querySelector("button").onclick=()=>open(api);
-      app.appendChild(el);
+      body.appendChild(el);
     });
+
+    box.querySelector(".section-header").onclick=()=>{
+      body.style.display = body.style.display==="block"?"none":"block";
+    };
+
+    app.appendChild(box);
   });
 }
 
 function open(api){
   current=api;
   document.getElementById("modal").style.display="flex";
-  document.getElementById("title").textContent=api.name;
+  document.getElementById("mTitle").textContent=api.name;
+  document.getElementById("mEndpoint").value=api.endpoint;
 
-  const p=document.getElementById("params");
+  const p=document.getElementById("mParams");
   p.innerHTML="";
   (api.params||[]).forEach(x=>{
     p.innerHTML+=`
       <div class="field">
-        <input id="p_${x.name}" placeholder="${x.name}" />
+        <label>${x.name}</label>
+        <input id="p_${x.name}">
       </div>`;
   });
 
-  document.getElementById("res").textContent="Waiting for response…";
+  updateUrl();
+}
+
+function updateUrl(){
+  if(!current)return;
+  const q=new URLSearchParams();
+  (current.params||[]).forEach(x=>{
+    const v=document.getElementById("p_"+x.name)?.value;
+    if(v) q.append(x.name,v);
+  });
+  document.getElementById("mUrl").textContent =
+    location.origin+current.endpoint+(q.toString()?("?"+q):"");
 }
 
 async function exec(){
-  const resBox=document.getElementById("res");
-  resBox.textContent="Loading...";
-  resBox.classList.add("loading");
+  updateUrl();
+  const box=document.getElementById("mRes");
+  box.textContent="Loading...";
+
+  const r=await fetch(document.getElementById("mUrl").textContent);
+  const text=await r.text();
 
   try{
-    const q=new URLSearchParams();
-    (current.params||[]).forEach(x=>{
-      const v=document.getElementById("p_"+x.name).value;
-      if(v) q.append(x.name,v);
-    });
-
-    const r=await fetch(
-      current.endpoint+(q.toString()?"?"+q:""),
-      { method: current.method }
-    );
-
-    const text=await r.text();
-    let output=text;
-
-    try{
-      output=JSON.stringify(JSON.parse(text),null,2);
-    }catch{}
-
-    resBox.textContent=`Status: ${r.status}\n\n${output}`;
+    box.textContent = JSON.stringify(JSON.parse(text),null,2);
   }catch{
-    resBox.textContent="❌ Network error";
+    box.textContent=text;
   }
+}
 
-  resBox.classList.remove("loading");
+function copyUrl(){
+  navigator.clipboard.writeText(document.getElementById("mUrl").textContent);
+}
+
+function copyResponse(){
+  navigator.clipboard.writeText(document.getElementById("mRes").textContent);
 }
 
 function closeModal(){
   document.getElementById("modal").style.display="none";
 }
 
-document.getElementById("modal").onclick=e=>{
-  if(e.target.id==="modal") closeModal();
-};
-window.addEventListener("keydown",e=>{
-  if(e.key==="Escape") closeModal();
-});
-
+document.addEventListener("input",updateUrl);
 load();
 </script>
-
 </body>
 </html>
